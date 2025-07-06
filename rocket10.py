@@ -81,7 +81,7 @@ class WimMount:
         )
         print('discarded.' if any(exc) else 'commited')
 
-@pyuac.main_requires_admin
+# @pyuac.main_requires_admin
 def main():
     for letter in string.ascii_uppercase:
         wim = pathlib.WindowsPath(f'{letter}:/sources/install.wim')
@@ -113,9 +113,69 @@ def main():
                     ) if pathlib.Path(path).exists() else None
                 )
             print('Edge chamfered.')
+
+            print('\n## Detaching worldly demands...')
+            run = subprocess.run(
+                args=(
+                    'dism',
+                    '/get-capabilities',
+                    '/image:'+str(wimmount.mnt),
+                ),
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            capability_pattern = r'Capability Identity : (?P<id>.*)\nState : (?P<state>.*)\n\n'
+            capabilites = re.fullmatch(
+                pattern=r'\nDeployment Image Servicing and Management tool\nVersion: (?P<version>.*)\n\nImage Version: (?P<img_version>.*)\n\nCapability listing:\n\n('+capability_pattern+')*The operation completed successfully.\n',
+                string=run.stdout,
+                flags=re.MULTILINE,
+            ).groupdict()
+            for capability in filter(
+                lambda p: (
+                    p['state'] == 'Installed'
+                    and not p['id'].startswith('Language.Basic')
+                    and not p['id'].startswith('Microsoft.Windows.PowerShell')
+                    and not p['id'].startswith('Windows.Client.ShellComponents')
+                ),
+                re.finditer(
+                    pattern=capability_pattern,
+                    string=run.stdout,
+                    flags=re.MULTILINE,
+                ),
+            ):
+                print(f'removing capability {capability['id']}...')
+                subprocess.run(
+                    args=(
+                        'dism',
+                        '/remove-capability',
+                        '/image:'+str(wimmount.mnt),
+                        '/capabilityname:'+capability['id']
+                    ),
+                    #capture_output=True,
+                    #text=True,
+                    check=True,
+                )
+            print('Demands detached.')
+
+            print('\n## Activating infinite potential...')
+            subprocess.run(
+                args=[
+                    'dism',
+                    '/add-provisionedappxpackage',
+                    '/image:'+str(wimmount.mnt),
+                    '/packagepath:.\winget\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle',
+                    '/licensepath:.\winget\e53e159d00e04f729cc2180cffd1c02e_License1.xml',
+                    '/region:all',
+                ]+list('/dependencypackagepath:'+str(dep) for dep in pathlib.Path('./winget/x64').glob('*.appx')),
+                #capture_output=True,
+                #text=True,
+                check=True,
+            )
+            print('Potential activated.')
         except:
             traceback.print_exc()
             raise
-        else:
+        finally:
             input('press [enter] to continue...')
 if __name__=='__main__': exit(main())

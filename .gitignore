@@ -1,4 +1,5 @@
 Pipfile.lock
 mnt
 vhd
+winget
 *.tmp.txt
