@@ -83,6 +83,10 @@ def main():
     for letter in string.ascii_uppercase:
         wim = pathlib.WindowsPath(f'{letter}:/sources/install.wim')
         if wim.is_file(): break
+    else:
+        print('No drive with sources/install.wim found.')
+        print('Did you insert a usb drive or mount a vhdx with windows installation media on it?')
+        return -1
     print(wim)
     print(WimInfo(wim))
     with WimMount(
