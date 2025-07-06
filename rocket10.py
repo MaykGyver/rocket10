@@ -51,6 +51,7 @@ class WimMount:
         self.idx = int(idx)
         self.mnt = pathlib.Path(mnt)
     def __enter__(self):
+        print(f'\n## Mounting {self.wim} {self.idx} to {self.mnt} ...')
         subprocess.run(
             args=(
                 'dism',
@@ -63,8 +64,10 @@ class WimMount:
             # text=True,
             check=True,
         )
+        print('mounted.')
         return self
     def __exit__(self,*exc):
+        print(f'\n## Unmounting {self.wim} {self.idx} from {self.mnt} ...')
         subprocess.run(
             args=(
                 'dism',
@@ -76,7 +79,7 @@ class WimMount:
             # text=True,
             check=True,
         )
-
+        print('discarded.' if any(exc) else 'commited')
 
 @pyuac.main_requires_admin
 def main():
@@ -95,10 +98,11 @@ def main():
         mnt='./mnt',
     ) as wimmount:
         try:
+            print('\n## Chamfering Edge...')
             for edge in (
                 list((wimmount.mnt/'Program Files (x86)'/'Microsoft').glob('Edge*'))+
                 list((wimmount.mnt/'Windows'/'WinSxS').glob('amd64_microsoft-edge-webview_31bf3856ad364e35*'))+
-                [wimmount.mnt/'Windows'/'System32'/'Microsoft-Edge-Webview']
+                ([wimmount.mnt/'Windows'/'System32'/'Microsoft-Edge-Webview'] if (wimmount.mnt/'Windows'/'System32'/'Microsoft-Edge-Webview').exists() else [])
             ):
                 print(f'removing {edge}...')
                 shutil.rmtree(
@@ -108,6 +112,7 @@ def main():
                         function(path),
                     ) if pathlib.Path(path).exists() else None
                 )
+            print('Edge chamfered.')
         except:
             traceback.print_exc()
             raise
