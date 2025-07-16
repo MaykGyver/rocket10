@@ -82,25 +82,30 @@ class WimMount:
 @pyuac.main_requires_admin
 def main():
     for letter in string.ascii_uppercase:
-        wim = pathlib.WindowsPath(f'{letter}:/sources/install.wim')
-        if wim.is_file(): break
+        wim_path = pathlib.WindowsPath(f'{letter}:/sources/install.wim')
+        if wim_path.is_file(): break
     else:
         print('No drive with sources/install.wim found.')
         print('Did you insert a usb drive or mount a vhdx with windows installation media on it?')
         return -1
-    print(wim)
-    print(WimInfo(wim))
+    print(f'Installation image found at {wim_path}')
+    
+    wim_info = WimInfo(wim_path)
+    if not all(image.name.startswith('Windows 10') and image.description.startswith('Windows 10') for image in wim_info.images):
+        print(f'{wim_path} does not look like a Windows 10 medium. Aborting.')
+        return -2
+
     with WimMount(
-        wim=wim,
+        wim=wim_path,
         idx=2,
         mnt='./mnt',
-    ) as wimmount:
+    ) as wim_mount:
         try:
             print('\n## Chamfering Edge...')
             for edge in (
-                list((wimmount.mnt/'Program Files (x86)'/'Microsoft').glob('Edge*'))+
-                list((wimmount.mnt/'Windows'/'WinSxS').glob('amd64_microsoft-edge-webview_31bf3856ad364e35*'))+
-                ([wimmount.mnt/'Windows'/'System32'/'Microsoft-Edge-Webview'] if (wimmount.mnt/'Windows'/'System32'/'Microsoft-Edge-Webview').exists() else [])
+                list((wim_mount.mnt/'Program Files (x86)'/'Microsoft').glob('Edge*'))+
+                list((wim_mount.mnt/'Windows'/'WinSxS').glob('amd64_microsoft-edge-webview_31bf3856ad364e35*'))+
+                ([wim_mount.mnt/'Windows'/'System32'/'Microsoft-Edge-Webview'] if (wim_mount.mnt/'Windows'/'System32'/'Microsoft-Edge-Webview').exists() else [])
             ):
                 print(f'removing {edge}...')
                 shutil.rmtree(
@@ -117,7 +122,7 @@ def main():
                 args=(
                     'dism',
                     '/get-capabilities',
-                    '/image:'+str(wimmount.mnt),
+                    '/image:'+str(wim_mount.mnt),
                 ),
                 capture_output=True,
                 text=True,
@@ -147,7 +152,7 @@ def main():
                     args=(
                         'dism',
                         '/remove-capability',
-                        '/image:'+str(wimmount.mnt),
+                        '/image:'+str(wim_mount.mnt),
                         '/capabilityname:'+capability['id']
                     ),
                     #capture_output=True,
@@ -162,7 +167,7 @@ def main():
                 args=[
                     'dism',
                     '/add-provisionedappxpackage',
-                    '/image:'+str(wimmount.mnt),
+                    '/image:'+str(wim_mount.mnt),
                     '/packagepath:.\\winget\\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle',
                     '/licensepath:.\\winget\\e53e159d00e04f729cc2180cffd1c02e_License1.xml',
                     '/region:all',
