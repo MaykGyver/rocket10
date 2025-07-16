@@ -135,89 +135,92 @@ def main():
 
     provide_winget_package()
 
-    with WimMount(
-        wim=wim_path,
-        idx=2,
-    ) as wim_mount:
-        try:
-            print('\n## Chamfering Edge...\n')
-            for edge in (
-                list((wim_mount.mnt/'Program Files (x86)'/'Microsoft').glob('Edge*'))+
-                list((wim_mount.mnt/'Windows'/'WinSxS').glob('amd64_microsoft-edge-webview_31bf3856ad364e35*'))+
-                ([wim_mount.mnt/'Windows'/'System32'/'Microsoft-Edge-Webview'] if (wim_mount.mnt/'Windows'/'System32'/'Microsoft-Edge-Webview').exists() else [])
-            ):
-                print(f'removing {edge}...')
-                shutil.rmtree(
-                    path=edge,
-                    onexc=lambda function,path,exception: (
-                        os.chmod(path, stat.S_IWRITE),
-                        function(path),
-                    ) if pathlib.Path(path).exists() else None
-                )
-            print('Edge chamfered.')
+    for image in wim_info.images:
+        print(f'\n# Rocketizing {image.name}...\n')
+        with WimMount(
+            wim=wim_path,
+            idx=image.index,
+        ) as wim_mount:
+            try:
+                print('\n## Chamfering Edge...\n')
+                for edge in (
+                    list((wim_mount.mnt/'Program Files (x86)'/'Microsoft').glob('Edge*'))+
+                    list((wim_mount.mnt/'Windows'/'WinSxS').glob('amd64_microsoft-edge-webview_31bf3856ad364e35*'))+
+                    ([wim_mount.mnt/'Windows'/'System32'/'Microsoft-Edge-Webview'] if (wim_mount.mnt/'Windows'/'System32'/'Microsoft-Edge-Webview').exists() else [])
+                ):
+                    print(f'removing {edge}...')
+                    shutil.rmtree(
+                        path=edge,
+                        onexc=lambda function,path,exception: (
+                            os.chmod(path, stat.S_IWRITE),
+                            function(path),
+                        ) if pathlib.Path(path).exists() else None
+                    )
+                print('Edge chamfered.')
 
-            print('\n## Detaching worldly demands...\n')
-            run = subprocess.run(
-                args=(
-                    'dism',
-                    '/get-capabilities',
-                    '/image:'+str(wim_mount.mnt),
-                ),
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-            capability_pattern = r'Capability Identity : (?P<id>.*)\nState : (?P<state>.*)\n\n'
-            capabilites = re.fullmatch(
-                pattern=r'\nDeployment Image Servicing and Management tool\nVersion: (?P<version>.*)\n\nImage Version: (?P<img_version>.*)\n\nCapability listing:\n\n('+capability_pattern+')*The operation completed successfully.\n',
-                string=run.stdout,
-                flags=re.MULTILINE,
-            ).groupdict()
-            for capability in filter(
-                lambda p: (
-                    p['state'] == 'Installed'
-                    and not p['id'].startswith('Language.Basic')
-                    and not p['id'].startswith('Microsoft.Windows.PowerShell')
-                    and not p['id'].startswith('Windows.Client.ShellComponents')
-                ),
-                re.finditer(
-                    pattern=capability_pattern,
-                    string=run.stdout,
-                    flags=re.MULTILINE,
-                ),
-            ):
-                print(f'removing capability {capability['id']}...')
-                subprocess.run(
+                print('\n## Detaching worldly demands...\n')
+                run = subprocess.run(
                     args=(
                         'dism',
-                        '/remove-capability',
+                        '/get-capabilities',
                         '/image:'+str(wim_mount.mnt),
-                        '/capabilityname:'+capability['id']
                     ),
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                capability_pattern = r'Capability Identity : (?P<id>.*)\nState : (?P<state>.*)\n\n'
+                capabilites = re.fullmatch(
+                    pattern=r'\nDeployment Image Servicing and Management tool\nVersion: (?P<version>.*)\n\nImage Version: (?P<img_version>.*)\n\nCapability listing:\n\n('+capability_pattern+')*The operation completed successfully.\n',
+                    string=run.stdout,
+                    flags=re.MULTILINE,
+                ).groupdict()
+                for capability in filter(
+                    lambda p: (
+                        p['state'] == 'Installed'
+                        and not p['id'].startswith('Language.Basic')
+                        and not p['id'].startswith('Microsoft.Windows.PowerShell')
+                        and not p['id'].startswith('Windows.Client.ShellComponents')
+                    ),
+                    re.finditer(
+                        pattern=capability_pattern,
+                        string=run.stdout,
+                        flags=re.MULTILINE,
+                    ),
+                ):
+                    print(f'removing capability {capability['id']}...')
+                    subprocess.run(
+                        args=(
+                            'dism',
+                            '/remove-capability',
+                            '/image:'+str(wim_mount.mnt),
+                            '/capabilityname:'+capability['id']
+                        ),
+                        #capture_output=True,
+                        #text=True,
+                        check=True,
+                    )
+                print('Demands detached.')
+
+                print('\n## Activating infinite potential...\n')
+                # todo : automate retrieval of winget from github
+                subprocess.run(
+                    args=[
+                        'dism',
+                        '/add-provisionedappxpackage',
+                        '/image:'+str(wim_mount.mnt),
+                        '/packagepath:.\\winget\\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle',
+                        '/licensepath:.\\winget\\e53e159d00e04f729cc2180cffd1c02e_License1.xml',
+                        '/region:all',
+                    ]+list('/dependencypackagepath:'+str(dep) for dep in pathlib.Path('./winget/DesktopAppInstaller_Dependencies/x64').glob('*.appx')),
                     #capture_output=True,
                     #text=True,
                     check=True,
                 )
-            print('Demands detached.')
-
-            print('\n## Activating infinite potential...\n')
-            # todo : automate retrieval of winget from github
-            subprocess.run(
-                args=[
-                    'dism',
-                    '/add-provisionedappxpackage',
-                    '/image:'+str(wim_mount.mnt),
-                    '/packagepath:.\\winget\\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle',
-                    '/licensepath:.\\winget\\e53e159d00e04f729cc2180cffd1c02e_License1.xml',
-                    '/region:all',
-                ]+list('/dependencypackagepath:'+str(dep) for dep in pathlib.Path('./winget/DesktopAppInstaller_Dependencies/x64').glob('*.appx')),
-                #capture_output=True,
-                #text=True,
-                check=True,
-            )
-            print('Potential activated.')
-        except:
-            traceback.print_exc()
-            input('press [enter] to continue...')
-            raise
+                print('Potential activated.')
+            except:
+                traceback.print_exc()
+                input('press [enter] to continue...')  # stop here for interactive analysis of the faulty situation before unmounting and stuff
+                raise
+    print(f'\n{len(wim_info.images)} images rocketized.')
 if __name__=='__main__': exit(main())
