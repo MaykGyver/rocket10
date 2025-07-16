@@ -1,6 +1,6 @@
 # 🚀 Rocket 10
 
-> A minimalist Windows 10 remix that launches your perfect system from PowerShell and winget.
+A minimalist Windows 10 remix that launches your perfect system from PowerShell and winget.
 
 ## Usage
 
