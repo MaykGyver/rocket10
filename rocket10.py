@@ -1,8 +1,9 @@
 import collections
+import os
 import pathlib
 import pyuac
-import os
 import re
+import requests
 import shutil
 import stat
 import string
@@ -44,12 +45,13 @@ class WimInfo:
         return f'{self.__class__}(version={self.version!r},path={self.path!r},images={self.images!r})'
 
 class WimMount:
-    def __init__(self,wim:pathlib.Path,idx:int,mnt:pathlib.Path):
+    def __init__(self,wim:pathlib.Path,idx:int,mnt:pathlib.Path='mnt'):
         self.wim = pathlib.Path(wim)
         self.idx = int(idx)
         self.mnt = pathlib.Path(mnt)
     def __enter__(self):
         print(f'\n## Mounting {self.wim} {self.idx} to {self.mnt} ...')
+        self.mnt.mkdir()
         subprocess.run(
             args=(
                 'dism',
@@ -77,7 +79,43 @@ class WimMount:
             # text=True,
             check=True,
         )
+        self.mnt.rmdir()
         print('discarded.' if any(exc) else 'commited')
+
+def provide_winget_package():
+    print('\n## Providing winget package\n')
+    base = pathlib.Path('winget')
+    base.mkdir(exist_ok=True)
+    with requests.Session() as session:
+        latest=session.get(
+            url='https://api.github.com/repos/microsoft/winget-cli/releases/latest'
+        ).json()
+        for asset in latest['assets']:
+            name = asset['name']
+            dst = base / name
+            if dst.exists():
+                print(f'{dst} found.')
+            else:
+                print(f'Downloading {dst} ...')
+                with open(f'winget/{name}','wb') as fdst:
+                    shutil.copyfileobj(
+                        fsrc=session.get(
+                            url=asset['browser_download_url'],
+                            stream=True,
+                        ).raw,
+                        fdst=fdst,
+                    )
+                if name.endswith('.zip'):
+                    subprocess.check_call(
+                        args=(
+                            'pwsh',
+                            '-wd', str(base),
+                            '-c', 'Expand-Archive',
+                            '-Path', name,
+                            '-Force',  # overwrite if exists
+                        ),
+                    )
+    print('winget package available.')
 
 @pyuac.main_requires_admin
 def main():
@@ -95,13 +133,14 @@ def main():
         print(f'{wim_path} does not look like a Windows 10 medium. Aborting.')
         return -2
 
+    provide_winget_package()
+
     with WimMount(
         wim=wim_path,
         idx=2,
-        mnt='./mnt',
     ) as wim_mount:
         try:
-            print('\n## Chamfering Edge...')
+            print('\n## Chamfering Edge...\n')
             for edge in (
                 list((wim_mount.mnt/'Program Files (x86)'/'Microsoft').glob('Edge*'))+
                 list((wim_mount.mnt/'Windows'/'WinSxS').glob('amd64_microsoft-edge-webview_31bf3856ad364e35*'))+
@@ -117,7 +156,7 @@ def main():
                 )
             print('Edge chamfered.')
 
-            print('\n## Detaching worldly demands...')
+            print('\n## Detaching worldly demands...\n')
             run = subprocess.run(
                 args=(
                     'dism',
@@ -161,7 +200,7 @@ def main():
                 )
             print('Demands detached.')
 
-            print('\n## Activating infinite potential...')
+            print('\n## Activating infinite potential...\n')
             # todo : automate retrieval of winget from github
             subprocess.run(
                 args=[
@@ -171,7 +210,7 @@ def main():
                     '/packagepath:.\\winget\\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle',
                     '/licensepath:.\\winget\\e53e159d00e04f729cc2180cffd1c02e_License1.xml',
                     '/region:all',
-                ]+list('/dependencypackagepath:'+str(dep) for dep in pathlib.Path('./winget/x64').glob('*.appx')),
+                ]+list('/dependencypackagepath:'+str(dep) for dep in pathlib.Path('./winget/DesktopAppInstaller_Dependencies/x64').glob('*.appx')),
                 #capture_output=True,
                 #text=True,
                 check=True,
@@ -179,8 +218,6 @@ def main():
             print('Potential activated.')
         except:
             traceback.print_exc()
-            raise
-        finally:
             input('press [enter] to continue...')
+            raise
 if __name__=='__main__': exit(main())
- 
