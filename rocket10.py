@@ -81,7 +81,7 @@ class WimMount:
         )
         print('discarded.' if any(exc) else 'commited')
 
-# @pyuac.main_requires_admin
+@pyuac.main_requires_admin
 def main():
     for letter in string.ascii_uppercase:
         wim = pathlib.WindowsPath(f'{letter}:/sources/install.wim')
@@ -179,3 +179,4 @@ def main():
         finally:
             input('press [enter] to continue...')
 if __name__=='__main__': exit(main())
+ 
