@@ -157,13 +157,14 @@ def main():
             print('Demands detached.')
 
             print('\n## Activating infinite potential...')
+            # todo : automate retrieval of winget from github
             subprocess.run(
                 args=[
                     'dism',
                     '/add-provisionedappxpackage',
                     '/image:'+str(wimmount.mnt),
-                    '/packagepath:.\winget\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle',
-                    '/licensepath:.\winget\e53e159d00e04f729cc2180cffd1c02e_License1.xml',
+                    '/packagepath:.\\winget\\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle',
+                    '/licensepath:.\\winget\\e53e159d00e04f729cc2180cffd1c02e_License1.xml',
                     '/region:all',
                 ]+list('/dependencypackagepath:'+str(dep) for dep in pathlib.Path('./winget/x64').glob('*.appx')),
                 #capture_output=True,
