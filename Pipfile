@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 pyuac = "*"
 pypiwin32 = "*"
-parse = "*"
 
 [dev-packages]
 

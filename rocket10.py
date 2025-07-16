@@ -1,6 +1,4 @@
 import collections
-import itertools
-import parse
 import pathlib
 import pyuac
 import os
