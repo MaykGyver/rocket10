@@ -46,3 +46,9 @@ If a component or feature can be added post-installation without compromise in s
 ### Legitimacy
 
 This project does not endorse or support copyright violations or software piracy. If any conflicts arise related to this project, please file an issue so we can investigate and implement appropriate, reasonable measures.
+
+## 🧭 Roadmap
+
+Some user apps reinstall during the post-install update phase (Edge, DevHome, some more). It's easy to remove them manually (at least it's possible at all), but an automated approach would be nicer.
+
+When 🚀 Rocket 10 matured and multiple users reported succesful use, we will fork it and start 🚀 Rocket 11.
