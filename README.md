@@ -51,4 +51,6 @@ This project does not endorse or support copyright violations or software piracy
 
 Some user apps reinstall during the post-install update phase (Edge, DevHome, some more). It's easy to remove them manually (at least it's possible at all), but an automated approach would be nicer.
 
+How do we assist casual users in finding and installing the perfect set of packages for their scenario? Community discussion welcome!
+
 When 🚀 Rocket 10 matured and multiple users reported succesful use, we will fork it and start 🚀 Rocket 11.
