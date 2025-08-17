@@ -15,7 +15,7 @@ class WimInfo:
     def __init__(self,wim:pathlib.Path):
         run = subprocess.run(
             args=(
-                'dism',
+                'dism','/english',
                 '/get-imageinfo',
                 '/imagefile:'+str(wim),
             ),
@@ -54,7 +54,7 @@ class WimMount:
         self.mnt.mkdir()
         subprocess.run(
             args=(
-                'dism',
+                'dism','/english',
                 '/mount-image',
                 '/imagefile:'+str(self.wim),
                 '/index:'+str(self.idx),
@@ -70,7 +70,7 @@ class WimMount:
         print(f'\n## Unmounting {self.wim} {self.idx} from {self.mnt} ...')
         subprocess.run(
             args=(
-                'dism',
+                'dism','/english',
                 '/unmount-wim',
                 '/mountdir:'+str(self.mnt),
                 '/discard' if any(exc) else '/commit',
@@ -97,7 +97,7 @@ def provide_winget_package():
                 print(f'{dst} found.')
             else:
                 print(f'Downloading {dst} ...')
-                with open(f'winget/{name}','wb') as fdst:
+                with open(str(dst),'wb') as fdst:
                     shutil.copyfileobj(
                         fsrc=session.get(
                             url=asset['browser_download_url'],
@@ -108,7 +108,7 @@ def provide_winget_package():
                 if name.endswith('.zip'):
                     subprocess.check_call(
                         args=(
-                            'pwsh',
+                            'powershell',
                             '-wd', str(base),
                             '-c', 'Expand-Archive',
                             '-Path', name,
@@ -161,7 +161,7 @@ def main():
                 print('\n## Detaching worldly demands...\n')
                 run = subprocess.run(
                     args=(
-                        'dism',
+                        'dism','/english',
                         '/get-capabilities',
                         '/image:'+str(wim_mount.mnt),
                     ),
@@ -191,7 +191,7 @@ def main():
                     print(f'removing capability {capability['id']}...')
                     subprocess.run(
                         args=(
-                            'dism',
+                            'dism','/english',
                             '/remove-capability',
                             '/image:'+str(wim_mount.mnt),
                             '/capabilityname:'+capability['id']
@@ -206,7 +206,7 @@ def main():
                 # todo : automate retrieval of winget from github
                 subprocess.run(
                     args=[
-                        'dism',
+                        'dism','/english',
                         '/add-provisionedappxpackage',
                         '/image:'+str(wim_mount.mnt),
                         '/packagepath:.\\winget\\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle',
